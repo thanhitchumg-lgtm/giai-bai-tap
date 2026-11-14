@@ -10,7 +10,7 @@ Website cho người dùng chụp ảnh bài tập, chọn môn và cấp học,
 - Nếu model đang chọn bị quá tải hoặc lỗi, server tự thử lại rồi chuyển sang model khác và báo cho người dùng biết.
 - Chọn môn (Toán, Lý, Hóa, Sinh, Anh, Văn, Sử, Địa, GDCD, Tin...) và cấp (Tiểu học, THCS, THPT, Đại học), hoặc để tự nhận diện.
 - Lời giải hiển thị công thức toán đẹp (KaTeX).
-- API key được giữ ở server, giới hạn số lượt gọi mỗi IP (mặc định 10 lượt/phút).
+- API key được giữ ở server, giới hạn số lượt gọi mỗi IP (mặc định 15 lượt/phút).
 
 ## Cách chạy
 1. Cài Node.js bản 18 trở lên (nodejs.org).
@@ -43,3 +43,10 @@ Khi khởi động, terminal sẽ in ra từng chế độ đang dùng model nà
 ## Cấu trúc
 - `server.js`: server, gọi Gemini, giữ API key.
 - `public/index.html`, `style.css`, `app.js`: giao diện, công cụ cắt ảnh, hiển thị lời giải.
+
+## Trang tĩnh trên Render (không còn màn hình đen "waking up")
+
+- **Web Service** `giai-bai-tap`: chạy server.js (API giải bài, `/health`).
+- **Static Site**: Publish directory = `public`, Build Command để trống. Trang này luôn bật, mở lên là hiện ngay và tự đánh thức Web Service, trong lúc chờ hiện "Đang tải, vui lòng chờ chút...".
+- Nếu địa chỉ Web Service khác `https://giai-bai-tap.onrender.com`, sửa trong `public/config.js`.
+- Tuỳ chọn: thêm biến `ALLOWED_ORIGIN` (địa chỉ Static Site) trong Environment của Web Service để chỉ trang đó được gọi API.

@@ -27,6 +27,9 @@ const RATE_LIMIT_PER_MIN = Number(env.RATE_LIMIT_PER_MIN) || 15;
 const ATTEMPT_TIMEOUT_MS = (Number(env.TIMEOUT_SECONDS) || 60) * 1000; // chờ tối đa cho mỗi lần gọi Google
 const TOTAL_BUDGET_MS = ATTEMPT_TIMEOUT_MS * 2 + 5000; // tổng thời gian tối đa cho một lần giải
 const MAX_BODY = 12 * 1024 * 1024; // 12MB
+// Địa chỉ trang web được phép gọi API này từ trình duyệt (khi trang tĩnh đặt ở nơi khác).
+// Mặc định "*" = cho mọi trang. Muốn chặt hơn, đặt ALLOWED_ORIGIN=https://ten-trang-tinh.onrender.com
+const ALLOWED_ORIGIN = env.ALLOWED_ORIGIN || '*';
 
 // ---- 3 chế độ giải ----
 // thinking: mức "suy nghĩ" của model. Thấp = nhanh hơn. Đặt "default" để dùng mặc định của Google.
@@ -348,6 +351,24 @@ function serveStatic(req, res) {
 
 const server = http.createServer((req, res) => {
   const pathname = req.url.split('?')[0];
+
+  // Cho phép trang tĩnh ở địa chỉ khác gọi API (CORS)
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  if (ALLOWED_ORIGIN !== '*') res.setHeader('Vary', 'Origin');
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    return res.end();
+  }
+
+  // Kiểm tra máy chủ đã thức chưa (trang web gọi cái này để "đánh thức" máy chủ)
+  if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+    return res.end(req.method === 'HEAD' ? undefined : JSON.stringify({ ok: true }));
+  }
+
   if (req.method === 'POST' && pathname === '/api/solve') return handleSolve(req, res);
   if (req.method === 'GET' && pathname === '/api/modes') return handleModes(req, res);
   if (req.method === 'GET' || req.method === 'HEAD') return serveStatic(req, res);
