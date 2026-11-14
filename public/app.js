@@ -12,12 +12,82 @@
     note: $('note'), btnSolve: $('btnSolve'),
     sentImg: $('sentImg'), loading: $('loading'), error: $('error'),
     answer: $('answer'), warn: $('warn'),
+    wake: $('wakeBanner'), wakeTitle: $('wakeTitle'), wakeSub: $('wakeSub'), wakeRetry: $('btnWakeRetry'),
   };
 
   let src = null; // canvas chứa ảnh gốc (đã xoay nếu có)
   let crop = { x: 0.05, y: 0.05, w: 0.9, h: 0.9 }; // khung cắt, tính theo tỉ lệ 0..1
 
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+  // ---------- Chờ máy chủ thức dậy ----------
+  // Máy chủ miễn phí trên Render tự ngủ khi lâu không có người dùng và mất khoảng 1 phút để dậy.
+  const API_BASE = String(window.API_BASE || '').replace(/\/$/, '');
+  const api = (p) => API_BASE + p;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  let serverReady = false;
+  let waiting = false;
+
+  function updateSolveBtn() {
+    els.btnSolve.disabled = !serverReady;
+    els.btnSolve.textContent = serverReady ? '✨ Giải bài này' : '⏳ Đang chờ máy chủ khởi động...';
+  }
+
+  async function checkHealth() {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch(api('/health'), { cache: 'no-store', signal: ctrl.signal });
+      const data = await res.json();
+      return !!(data && data.ok);
+    } catch (e) {
+      return false; // chưa thức dậy, hoặc đang trả về trang chờ của Render
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function waitForServer() {
+    if (waiting) return;
+    waiting = true;
+    serverReady = false;
+    updateSolveBtn();
+    els.wakeRetry.hidden = true;
+    els.wake.classList.remove('fail');
+    els.wakeTitle.textContent = 'Đang tải, vui lòng chờ chút...';
+    const started = Date.now();
+    // Chỉ hiện thông báo nếu sau 1,5 giây vẫn chưa kết nối được (máy chủ đang thức thì không hiện)
+    const showTimer = setTimeout(() => { els.wake.hidden = false; }, 1500);
+    const tick = setInterval(() => {
+      const s = Math.round((Date.now() - started) / 1000);
+      els.wakeSub.textContent =
+        `Máy chủ đang khởi động, có thể mất khoảng 1 phút (đã chờ ${s} giây). Bạn có thể chọn ảnh trong lúc chờ.`;
+    }, 1000);
+
+    let ok = false;
+    while (Date.now() - started < 4 * 60 * 1000) {
+      ok = await checkHealth();
+      if (ok) break;
+      await sleep(3000);
+    }
+    clearTimeout(showTimer);
+    clearInterval(tick);
+    waiting = false;
+
+    if (ok) {
+      els.wake.hidden = true;
+      serverReady = true;
+      updateSolveBtn();
+      loadModes();
+    } else {
+      els.wake.hidden = false;
+      els.wake.classList.add('fail');
+      els.wakeTitle.textContent = 'Chưa kết nối được máy chủ';
+      els.wakeSub.textContent = 'Máy chủ chưa phản hồi sau vài phút. Hãy bấm "Thử lại" hoặc tải lại trang.';
+      els.wakeRetry.hidden = false;
+    }
+  }
+  els.wakeRetry.onclick = () => waitForServer();
 
   // ---------- Chế độ giải (server tự báo model nào dùng được) ----------
   const MODE_DESC = {
@@ -33,7 +103,7 @@
 
   async function loadModes() {
     try {
-      const res = await fetch('/api/modes');
+      const res = await fetch(api('/api/modes'));
       const data = await res.json();
       els.mode.innerHTML = '';
       data.modes.forEach((m) => {
@@ -50,7 +120,6 @@
     }
     updateModeHint();
   }
-  loadModes();
 
   // ---------- Nạp ảnh ----------
   els.btnCamera.onclick = () => els.fileCamera.click();
@@ -242,7 +311,7 @@
 
   // ---------- Gửi đi giải ----------
   els.btnSolve.onclick = async () => {
-    if (!src) return;
+    if (!src || !serverReady) return;
     const image = getCroppedDataUrl();
     els.sentImg.src = image;
     els.resultCard.hidden = false;
@@ -255,7 +324,7 @@
     els.resultCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     try {
-      const res = await fetch('/api/solve', {
+      const res = await fetch(api('/api/solve'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -275,11 +344,18 @@
       els.answer.innerHTML = renderMarkdown(data.answer);
       els.warn.hidden = false;
     } catch (e) {
-      els.error.textContent = e.message || 'Không kết nối được tới server.';
+      const network = e instanceof TypeError; // không kết nối được (máy chủ có thể vừa ngủ lại)
+      els.error.textContent = network
+        ? 'Không kết nối được tới máy chủ. Máy chủ có thể đang khởi động lại, vui lòng chờ khoảng 1 phút rồi thử lại.'
+        : e.message || 'Có lỗi xảy ra, vui lòng thử lại.';
       els.error.hidden = false;
+      if (network) waitForServer();
     } finally {
       els.loading.hidden = true;
-      els.btnSolve.disabled = false;
+      updateSolveBtn();
     }
   };
+
+  // Bắt đầu: kiểm tra máy chủ đã thức chưa
+  waitForServer();
 })();

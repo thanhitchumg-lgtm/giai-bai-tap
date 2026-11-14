@@ -14,6 +14,16 @@
   </header>
 
   <main class="wrap">
+    <!-- Thông báo khi máy chủ đang khởi động -->
+    <div class="wake" id="wakeBanner" hidden>
+      <div class="spinner"></div>
+      <div class="wakeText">
+        <strong id="wakeTitle">Đang tải, vui lòng chờ chút...</strong>
+        <span id="wakeSub">Máy chủ đang khởi động, có thể mất khoảng 1 phút. Bạn có thể chọn ảnh trong lúc chờ.</span>
+        <button class="btn small" id="btnWakeRetry" type="button" hidden>Thử lại</button>
+      </div>
+    </div>
+
     <!-- Bước 1: chọn môn, cấp -->
     <section class="card">
       <h2><span class="num">1</span> Chọn môn và cấp học</h2>
@@ -110,6 +120,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
