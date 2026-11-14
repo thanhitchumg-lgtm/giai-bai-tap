@@ -94,12 +94,36 @@
     const scale = Math.min(avail / src.width, maxH / src.height, 1);
     const w = Math.round(src.width * scale);
     const h = Math.round(src.height * scale);
-    els.view.width = w;
-    els.view.height = h;
+    // Vẽ ở độ phân giải cao theo độ nét của màn hình để ảnh không bị mờ
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const k = Math.min(dpr, src.width / w); // không vẽ lớn hơn ảnh gốc
+    const bw = Math.max(1, Math.round(w * k));
+    const bh = Math.max(1, Math.round(h * k));
+    els.view.width = bw;
+    els.view.height = bh;
     els.view.style.width = w + 'px';
     els.view.style.height = h + 'px';
-    els.view.getContext('2d').drawImage(src, 0, 0, w, h);
+    const ctx = els.view.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(downscale(src, bw, bh), 0, 0, bw, bh);
     placeCrop();
+  }
+
+  // Thu nhỏ ảnh từng bước (mỗi lần một nửa) cho nét hơn so với thu nhỏ một lần
+  function downscale(source, tw, th) {
+    let cur = source;
+    while (cur.width / 2 >= tw && cur.height / 2 >= th) {
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.floor(cur.width / 2));
+      c.height = Math.max(1, Math.floor(cur.height / 2));
+      const x = c.getContext('2d');
+      x.imageSmoothingEnabled = true;
+      x.imageSmoothingQuality = 'high';
+      x.drawImage(cur, 0, 0, c.width, c.height);
+      cur = c;
+    }
+    return cur;
   }
 
   function placeCrop() {
