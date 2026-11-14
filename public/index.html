@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giải Bài Tập Bằng Ảnh</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>📚 Giải Bài Tập Bằng Ảnh</h1>
+    <p>Chụp đề bài, chọn môn và cấp, nhận lời giải từng bước.</p>
+  </header>
+
+  <main class="wrap">
+    <!-- Bước 1: chọn môn, cấp -->
+    <section class="card">
+      <h2><span class="num">1</span> Chọn môn và cấp học</h2>
+      <div class="row">
+        <label>Môn học
+          <select id="subject">
+            <option>Tự động nhận diện</option>
+            <option>Toán</option>
+            <option>Vật lý</option>
+            <option>Hóa học</option>
+            <option>Sinh học</option>
+            <option>Tiếng Anh</option>
+            <option>Ngữ văn</option>
+            <option>Lịch sử</option>
+            <option>Địa lý</option>
+            <option>GDCD</option>
+            <option>Tin học</option>
+            <option>Môn khác</option>
+          </select>
+        </label>
+        <label>Cấp học
+          <select id="level">
+            <option>Tự động nhận diện</option>
+            <option>Tiểu học (lớp 1-5)</option>
+            <option>THCS (lớp 6-9)</option>
+            <option>THPT (lớp 10-12)</option>
+            <option>Đại học</option>
+          </select>
+        </label>
+        <label>Chế độ giải
+          <select id="mode">
+            <option value="fast">Nhanh</option>
+            <option value="balanced">Cân bằng</option>
+            <option value="accurate">Chính xác</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint" id="modeHint"></p>
+    </section>
+
+    <!-- Bước 2: chụp / tải ảnh -->
+    <section class="card" id="pickCard">
+      <h2><span class="num">2</span> Chụp hoặc tải ảnh bài tập</h2>
+      <div class="row">
+        <button class="btn primary" id="btnCamera" type="button">📷 Chụp ảnh</button>
+        <button class="btn" id="btnUpload" type="button">🖼️ Chọn ảnh từ máy</button>
+      </div>
+      <input type="file" id="fileCamera" accept="image/*" capture="environment" hidden>
+      <input type="file" id="fileUpload" accept="image/*" hidden>
+      <p class="hint">Chụp thẳng, đủ sáng, không bị lóa. Sau đó bạn có thể kéo khung để chỉ chọn đúng phần bài cần giải.</p>
+    </section>
+
+    <!-- Bước 3: cắt ảnh -->
+    <section class="card" id="cropCard" hidden>
+      <h2><span class="num">3</span> Kéo khung vào đúng bài tập</h2>
+      <div class="stageWrap">
+        <div class="stage" id="stage">
+          <canvas id="view"></canvas>
+          <div class="shade" id="shade"></div>
+          <div class="crop" id="crop">
+            <i class="h nw" data-h="nw"></i><i class="h n" data-h="n"></i><i class="h ne" data-h="ne"></i>
+            <i class="h e" data-h="e"></i><i class="h se" data-h="se"></i><i class="h s" data-h="s"></i>
+            <i class="h sw" data-h="sw"></i><i class="h w" data-h="w"></i>
+          </div>
+        </div>
+      </div>
+      <div class="row tools">
+        <button class="btn small" id="btnRotateL" type="button">⟲ Xoay trái</button>
+        <button class="btn small" id="btnRotateR" type="button">⟳ Xoay phải</button>
+        <button class="btn small" id="btnFull" type="button">⛶ Chọn toàn ảnh</button>
+        <button class="btn small" id="btnRetake" type="button">↩ Chọn ảnh khác</button>
+      </div>
+      <label class="noteLabel">Ghi chú thêm (không bắt buộc)
+        <input type="text" id="note" maxlength="500" placeholder="Ví dụ: chỉ giải câu 2, giải bằng cách lớp 5...">
+      </label>
+      <button class="btn primary big" id="btnSolve" type="button">✨ Giải bài này</button>
+    </section>
+
+    <!-- Kết quả -->
+    <section class="card" id="resultCard" hidden>
+      <h2><span class="num">4</span> Lời giải</h2>
+      <div class="preview"><img id="sentImg" alt="Ảnh bài tập đã gửi"></div>
+      <div id="loading" class="loading" hidden>
+        <div class="spinner"></div> Đang đọc đề và giải bài, vui lòng đợi vài giây...
+      </div>
+      <div id="error" class="error" hidden></div>
+      <div id="info" class="info" hidden></div>
+      <article id="answer" class="answer"></article>
+      <p class="warn" id="warn" hidden>⚠️ Lời giải do AI tạo ra, có thể sai. Hãy kiểm tra lại, nhất là bài khó hoặc có hình vẽ.</p>
+    </section>
+  </main>
+
+  <footer class="foot">Copyright © Nguyễn Hữu Thành - 0934588820</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
