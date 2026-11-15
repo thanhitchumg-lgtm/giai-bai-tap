@@ -77,6 +77,17 @@ const MIME = {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- Giới hạn số lượt gọi theo IP ----
+// Lấy IP thật của người dùng. Trên Render, server đứng sau proxy nên req.socket.remoteAddress
+// chỉ là IP của proxy (mọi người sẽ bị tính chung một IP).
+function clientIp(req) {
+  const h = req.headers;
+  const cf = String(h['cf-connecting-ip'] || h['true-client-ip'] || '').trim();
+  if (cf) return cf;
+  const xff = String(h['x-forwarded-for'] || '').split(',')[0].trim();
+  if (xff) return xff;
+  return req.socket.remoteAddress || 'unknown';
+}
+
 const hits = new Map();
 function rateLimited(ip) {
   const now = Date.now();
@@ -301,7 +312,7 @@ async function handleSolve(req, res) {
   if (!API_KEY) {
     return sendJson(res, 500, { error: 'Server chưa có GEMINI_API_KEY. Hãy tạo file .env theo hướng dẫn trong README.' });
   }
-  const ip = req.socket.remoteAddress || 'unknown';
+  const ip = clientIp(req);
   if (rateLimited(ip)) {
     return sendJson(res, 429, { error: 'Bạn gửi quá nhanh, vui lòng đợi một chút rồi thử lại.' });
   }
